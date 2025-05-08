@@ -10,7 +10,7 @@ from gacha_hub.core.launcher import GameLauncher
 import shlex
 from .game_list_widget import RemovableListWidget
 from .icon_utils import get_valid_icon, extract_shortcut_info, extract_url_info
-from gacha_hub.ui.persistence import save_games, load_games
+from gacha_hub.ui.persistence import save_games, load_games, get_save_path
 
 if sys.platform.startswith("win"):
     import pythoncom
@@ -101,6 +101,10 @@ class MainWindow(QMainWindow):
         self.games = []  # List of dicts: {name, path, icon, type, launch_target, unique_key, exe, args}
         self.icon_path = os.path.join(os.path.dirname(__file__), "assets", "icons", "game.png")
         self.browser_icon_path = os.path.join(os.path.dirname(__file__), "assets", "icons", "browser.png")
+        # Set the window icon to logo.jpg
+        logo_path = os.path.join(os.path.dirname(__file__), "assets", "icons", "logo.jpg")
+        if os.path.exists(logo_path):
+            self.setWindowIcon(QIcon(logo_path))
         self.delete_mode = False
         self.setup_ui()
         self.apply_styles()
@@ -174,11 +178,20 @@ class MainWindow(QMainWindow):
                     game_name, exe, args, icon, unique_key = extract_shortcut_info(file_path, self.icon_path)
                     launch_target = (exe, args)
                     game_type = "shortcut"
+                    # Try to get the icon path from the shortcut, fallback to default
+                    icon_path = None
+                    if hasattr(icon, 'name') and icon.name():
+                        icon_path = icon.name()
+                    elif os.path.exists(file_path):
+                        icon_path = file_path
+                    else:
+                        icon_path = self.icon_path
                     print(f"[DEBUG] Shortcut extracted: exe={exe}, args={args}, icon={icon}, unique_key={unique_key}")
                 except Exception as e:
                     print(f"Failed to extract shortcut info: {e}")
                     game_name = os.path.splitext(os.path.basename(file_path))[0]
                     icon = QIcon(self.icon_path)
+                    icon_path = self.icon_path
                     unique_key = file_path
                     launch_target = (file_path, "")
                     exe = file_path
@@ -186,6 +199,7 @@ class MainWindow(QMainWindow):
             elif ext == ".exe":
                 game_name = os.path.splitext(os.path.basename(file_path))[0]
                 icon = get_valid_icon(file_path, self.icon_path)
+                icon_path = file_path if not icon.isNull() else self.icon_path
                 print(f"[DEBUG] EXE icon: {file_path}, icon.isNull={icon.isNull()}")
                 if icon.isNull():
                     print(f"[DEBUG] Icon for {file_path} is null, using default icon: {self.icon_path}")
@@ -194,12 +208,14 @@ class MainWindow(QMainWindow):
                 unique_key = file_path
             elif ext == ".url":
                 game_name, url, icon, unique_key = extract_url_info(file_path, self.browser_icon_path, self.icon_path)
+                icon_path = self.browser_icon_path if not icon.isNull() else self.icon_path
                 print(f"[DEBUG] URL extracted: url={url}, icon={icon}, unique_key={unique_key}")
                 launch_target = url
                 game_type = "url"
             else:
                 game_name = os.path.splitext(os.path.basename(file_path))[0]
                 icon = QIcon(self.icon_path)
+                icon_path = self.icon_path
                 print(f"[DEBUG] Other file: {file_path}, using default icon: {self.icon_path}")
                 launch_target = file_path
                 game_type = "file"
@@ -214,7 +230,7 @@ class MainWindow(QMainWindow):
             self.games.append({
                 "name": game_name,
                 "path": file_path,
-                "icon": icon,
+                "icon_path": icon_path,
                 "type": game_type,
                 "launch_target": launch_target,
                 "unique_key": unique_key,
@@ -224,6 +240,7 @@ class MainWindow(QMainWindow):
             item = QListWidgetItem(icon, game_name)
             self.game_list.addItem(item)
             print(f"[DEBUG] Game added: {game_name}, icon.isNull={icon.isNull()}, type={game_type}, unique_key={unique_key}")
+            self.save_games_to_file()
 
     def launch_selected_game(self, item):
         idx = self.game_list.row(item)
@@ -274,6 +291,7 @@ class MainWindow(QMainWindow):
             if reply == QMessageBox.Yes:
                 self.games.pop(idx)
                 self.game_list.takeItem(idx)
+                self.save_games_to_file()
 
     # Remove mouseReleaseEvent override from MainWindow
     # Drag/drop logic should be handled in RemovableListWidget only
@@ -307,5 +325,8 @@ class MainWindow(QMainWindow):
             print(f"[DEBUG] Failed to load games: {e}")
 
     def save_games_to_file(self):
-        # Implementation of save_games_to_file method
-        pass 
+        try:
+            save_games(self.games)
+            print(f"[DEBUG] Games saved to file at: {get_save_path()}")
+        except Exception as e:
+            print(f"[DEBUG] Failed to save games: {e}") 

@@ -11,8 +11,10 @@ def get_save_path():
 
 def save_games(games):
     save_path = get_save_path()
-    with open(save_path, 'w', encoding='utf-8') as f:
+    tmp_path = save_path + ".tmp"
+    with open(tmp_path, 'w', encoding='utf-8') as f:
         json.dump(games, f, ensure_ascii=False, indent=2)
+    os.replace(tmp_path, save_path)
 
 def load_games():
     save_path = get_save_path()

@@ -10,7 +10,7 @@ if sys.platform.startswith("win"):
 def get_valid_icon(path, default_icon):
     if path and os.path.exists(path):
         ext = os.path.splitext(path)[1].lower()
-        if ext in ['.ico', '.exe', '.dll']:
+        if ext in ['.ico', '.exe', '.dll', '.jpg', '.jpeg', '.png', '.bmp']:
             icon = QIcon(path)
             if not icon.isNull():
                 return icon
