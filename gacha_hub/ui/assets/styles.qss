@@ -1,0 +1,45 @@
+/* Genshin Impact-inspired style */
+* {
+    font-family: 'Segoe UI', 'Montserrat', 'Arial', sans-serif;
+    font-size: 15px;
+    color: #f3f3fa;
+}
+
+QMainWindow {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #23243a, stop:1 #3a3b5a);
+}
+
+QListWidget {
+    background: #23243a;
+    border: none;
+    border-radius: 12px;
+    padding: 8px;
+}
+
+QListWidget::item {
+    background: transparent;
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 4px;
+    color: #f3f3fa;
+}
+
+QListWidget::item:selected {
+    background: #4e4fae;
+    color: #fff;
+}
+
+QPushButton {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4e4fae, stop:1 #6c6dd6);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-weight: bold;
+    margin: 8px 0;
+    transition: background 0.2s;
+}
+
+QPushButton:hover {
+    background: #6c6dd6;
+} 
