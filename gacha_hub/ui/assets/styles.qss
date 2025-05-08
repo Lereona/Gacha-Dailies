@@ -37,7 +37,6 @@ QPushButton {
     padding: 10px 20px;
     font-weight: bold;
     margin: 8px 0;
-    transition: background 0.2s;
 }
 
 QPushButton:hover {

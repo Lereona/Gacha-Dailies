@@ -87,6 +87,13 @@ def extract_url_info(url_path, browser_icon, default_icon):
     return name, url, icon, unique_key
 
 class MainWindow(QMainWindow):
+    DEFAULT_TRASH_STYLE = (
+        "background: #b2bec3; color: #2d3436; border: 2px solid #636e72; border-radius: 8px; font-size: 20px;"
+    )
+    DELETE_MODE_TRASH_STYLE = (
+        "background: #e74c3c; color: white; border: 2px solid #b03a2e; border-radius: 8px; font-size: 20px;"
+    )
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Gacha Game Hub")
@@ -105,14 +112,10 @@ class MainWindow(QMainWindow):
 
         sidebar = QVBoxLayout()
         sidebar.setAlignment(Qt.AlignmentFlag.AlignTop)
-        # Trash can button at the top of the sidebar
         self.trash_btn = QPushButton("🗑️")
         self.trash_btn.setFixedSize(40, 40)
         self.trash_btn.setMinimumSize(40, 40)
-        self.trash_btn.setStyleSheet(
-            "background: #e74c3c; color: white; border: 2px solid #b03a2e; border-radius: 8px; font-size: 20px;"
-            "QPushButton:hover { background: #c0392b; color: white; }"
-        )
+        self.trash_btn.setStyleSheet(self.DEFAULT_TRASH_STYLE)
         self.trash_btn.clicked.connect(self.toggle_delete_mode)
         sidebar.addWidget(self.trash_btn)
         print("[DEBUG] Trash button added to sidebar")
@@ -122,6 +125,7 @@ class MainWindow(QMainWindow):
         self.game_list.itemClicked.connect(self.launch_selected_game)
         self.game_list.longPressed.connect(self.enable_reorder_mode)
         self.game_list.itemClickedForDelete.connect(self.on_long_press_item)
+        self.game_list.model().rowsMoved.connect(self.on_games_reordered)
         sidebar.addWidget(self.game_list)
 
         self.add_game_btn = QPushButton("+ Add Game")
@@ -255,9 +259,10 @@ class MainWindow(QMainWindow):
         self.delete_mode = not self.delete_mode
         self.game_list.set_delete_mode(self.delete_mode)
         if self.delete_mode:
-            self.trash_btn.setStyleSheet("background: #e74c3c; border-radius: 20px;")
+            self.trash_btn.setStyleSheet(self.DELETE_MODE_TRASH_STYLE)
         else:
-            self.trash_btn.setStyleSheet("border: none; background: transparent;")
+            self.trash_btn.setStyleSheet(self.DEFAULT_TRASH_STYLE)
+        if not self.delete_mode:
             self.game_list.setDragDropMode(QListWidget.NoDragDrop)
             self.game_list.setDragEnabled(False)
 
@@ -273,6 +278,34 @@ class MainWindow(QMainWindow):
     # Remove mouseReleaseEvent override from MainWindow
     # Drag/drop logic should be handled in RemovableListWidget only
 
+    def on_games_reordered(self, *args):
+        # Update self.games order to match QListWidget
+        new_games = []
+        for i in range(self.game_list.count()):
+            item = self.game_list.item(i)
+            name = item.text()
+            # Find the matching game by name and add in new order
+            for game in self.games:
+                if game["name"] == name:
+                    new_games.append(game)
+                    break
+        self.games = new_games
+        self.save_games_to_file()
+
     def load_games_from_file(self):
-        # Implementation of load_games_from_file method
+        try:
+            loaded_games = load_games()
+            print(f"[DEBUG] Loaded games from file: {loaded_games}")
+            self.games.clear()
+            self.game_list.clear()
+            for game in loaded_games:
+                icon = get_valid_icon(game.get("icon_path", self.icon_path), self.icon_path)
+                item = QListWidgetItem(icon, game["name"])
+                self.games.append(game)
+                self.game_list.addItem(item)
+        except Exception as e:
+            print(f"[DEBUG] Failed to load games: {e}")
+
+    def save_games_to_file(self):
+        # Implementation of save_games_to_file method
         pass 

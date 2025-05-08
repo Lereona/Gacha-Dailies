@@ -3,19 +3,11 @@ import json
 from pathlib import Path
 
 def get_save_path():
-    # Prefer project root for development, fallback to user app data dir
+    # Always use project root for games.json
     project_root = os.path.dirname(os.path.abspath(__file__))
     save_path = os.path.join(project_root, 'games.json')
-    try:
-        # Try to write to project root
-        with open(save_path, 'a') as f:
-            pass
-        return save_path
-    except Exception:
-        # Fallback to user app data dir
-        app_dir = os.path.join(os.path.expanduser('~'), '.gacha_game_hub')
-        os.makedirs(app_dir, exist_ok=True)
-        return os.path.join(app_dir, 'games.json')
+    print(f"[DEBUG] Using games.json path: {save_path}")
+    return save_path
 
 def save_games(games):
     save_path = get_save_path()
